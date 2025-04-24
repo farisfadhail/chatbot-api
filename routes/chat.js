@@ -13,25 +13,24 @@ router.post("/", authenticate, async (req, res) => {
 		return res.status(400).json({ error: "Message is required" });
 	}
 
-	const context = sessionStore.getContext(userId);
+	const history = sessionStore.getContext(userId);
+	const contextPrompt = history.map((h) => `User: ${h.user}\nBot: ${h.bot}`).join("\n\n");
+	const fullPrompt = contextPrompt ? `${contextPrompt}\n\nUser: ${message}` : message;
 
 	try {
-		const response = await axios.post(
-			"https://rag-endpoint.vercel.app/api/rag/generate",
-			{
-				message,
-				context,
-			},
-			{ timeout: 3000 }
-		);
+		const response = await axios.post("https://rag-endpoint.vercel.app/api/rag/generate", {
+			question: fullPrompt,
+		});
 
-		const reply = response.data.response;
-		sessionStore.appendContext(userId, { user: message, bot: reply });
+		const answer = response.data.answer;
+		const context = response.data.context || [];
 
-		res.json({ response: reply });
+		sessionStore.appendContext(userId, { user: message, bot: answer });
+
+		res.json({ answer, context });
 	} catch (err) {
-		console.error("RAG Error:", err.message);
-		res.status(500).json({ error: "Failed to get response from RAG" });
+		console.error("RAG API error:", err.message);
+		res.status(500).json({ error: "Failed to get response from RAG API" });
 	}
 });
 

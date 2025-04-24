@@ -1,15 +1,17 @@
-const sessions = new Map();
+const sessionMap = new Map();
 
-const getContext = (userId) => sessions.get(userId) || [];
+function getContext(userId) {
+	return sessionMap.get(userId) || [];
+}
 
-const appendContext = (userId, entry) => {
-	const context = getContext(userId);
-	if (context.length >= 10) context.shift(); // Keep max 10 messages
-	context.push(entry);
-	sessions.set(userId, context);
-};
+function appendContext(userId, messagePair) {
+	const history = getContext(userId);
+	history.push(messagePair);
+	sessionMap.set(userId, history.slice(-5)); // keep last 5 pairs
+}
 
-export default {
-	getContext,
-	appendContext,
-};
+function resetContext(userId) {
+	sessionMap.set(userId, []);
+}
+
+export default { getContext, appendContext, resetContext };

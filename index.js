@@ -1,15 +1,22 @@
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
-import morgan from "morgan";
+import jwt from "jsonwebtoken";
 import chatRoutes from "./routes/chat.js";
 
 dotenv.config();
 const app = express();
-
-app.use(cors());
 app.use(express.json());
-app.use(morgan("combined")); // Logging middleware
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+app.post("/login", (req, res) => {
+	const { username } = req.body;
+	if (!username) return res.status(400).json({ error: "Username required" });
+
+	// fake user
+	const token = jwt.sign({ id: username }, JWT_SECRET, { expiresIn: "1h" });
+	res.json({ token });
+});
 
 app.use("/api/chat", chatRoutes);
 
